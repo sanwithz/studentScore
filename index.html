@@ -41,6 +41,13 @@
         body {
             background: linear-gradient(0deg, rgba(252, 233, 233, 1) 0%, rgba(224, 244, 241, 1) 26%, rgba(255, 255, 255, 1) 71%);
         }
+
+        .gradient-bg {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        }
+        .gradient-btn {
+            background: linear-gradient(135deg, #4f46e5 0%, #7c3aed 100%);
+        }
         .progress-bar {
             transition: width 0.5s ease-in-out;
         }
@@ -51,7 +58,7 @@
 </head>
 <body>
     <!-- Login/Check Score Page -->
-    <div id="loginPage" class="min-h-screen flex flex-col">
+    <div id="loginPage" class="min-h-screen gradient-bg flex flex-col">
         <div class="flex-1 flex items-center justify-center p-4">
             <div class="bg-white rounded-2xl shadow-2xl p-8 w-full max-w-md">
                 <!-- Search Icon -->
@@ -72,7 +79,7 @@
                                class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent outline-none transition-all">
                     </div>
                     <button onclick="checkScore()" 
-                            class="w-full bg-purple-600 hover:bg-purple-700 text-white py-3 rounded-lg font-semibold transition-colors">
+                            class="w-full gradient-btn text-white py-3 rounded-lg font-semibold hover:opacity-90 transition-opacity">
                         ตรวจสอบคะแนน
                     </button>
                 </div>
@@ -179,7 +186,7 @@
     </div>
 
     <!-- Student Result Page -->
-    <div id="resultPage" class="hidden min-h-screen flex flex-col">
+    <div id="resultPage" class="hidden min-h-screen gradient-bg flex flex-col">
         <div class="flex-1 p-4">
             <div class="max-w-4xl mx-auto">
                 <!-- Logout Button -->
