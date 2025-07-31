@@ -1,0 +1,739 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ระบบตรวจสอบคะแนนนักเรียน</title>
+    <!-- jquery -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jquery/3.6.0/jquery.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jquery.form/4.3.0/jquery.form.min.js"></script>
+
+    <!-- Tailwind css -->
+    <link href="https://cdn.jsdelivr.net/npm/tailwindcss@2.2.19/dist/tailwind.min.css" rel="stylesheet">
+
+    <!-- Loading Overlay -->
+    <script src="https://cdn.jsdelivr.net/npm/gasparesganga-jquery-loading-overlay@2.1.7/dist/loadingoverlay.min.js"></script>
+
+    <!-- Chart js -->
+    <script src="https://cdn.jsdelivr.net/npm/chart.js@3.9.1/dist/chart.min.js"></script>
+
+    <!-- Tabulator -->
+    <link href="https://unpkg.com/tabulator-tables@5.4.4/dist/css/tabulator_bootstrap5.min.css" rel="stylesheet" />
+    <script type="text/javascript" src="https://unpkg.com/tabulator-tables/dist/js/tabulator.min.js"></script>
+
+    <!-- Apex charts -->
+    <script src="https://cdn.jsdelivr.net/npm/apexcharts"></script>
+
+    <!-- Sweet Alert -->
+    <script src="//cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+    
+    <!-- Font Awesome -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Noto+Sans+Thai:wght@300;400;700&display=swap');
+        
+        * {
+            box-sizing: border-box;
+            font-family: 'Noto Sans Thai', sans-serif;
+        }
+
+        body {
+            background: linear-gradient(0deg, rgba(252, 233, 233, 1) 0%, rgba(224, 244, 241, 1) 26%, rgba(255, 255, 255, 1) 71%);
+        }
+        .progress-bar {
+            transition: width 0.5s ease-in-out;
+        }
+        .circular-progress {
+            transform: rotate(-90deg);
+        }
+    </style>
+</head>
+<body>
+    <!-- Login/Check Score Page -->
+    <div id="loginPage" class="min-h-screen flex flex-col">
+        <div class="flex-1 flex items-center justify-center p-4">
+            <div class="bg-white rounded-2xl shadow-2xl p-8 w-full max-w-md">
+                <!-- Search Icon -->
+                <div class="text-center mb-6">
+                    <div class="inline-flex items-center justify-center w-16 h-16 bg-purple-100 rounded-full mb-4">
+                        <svg class="w-8 h-8 text-purple-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"></path>
+                        </svg>
+                    </div>
+                    <h1 class="text-2xl font-bold text-gray-800 mb-2">ตรวจสอบคะแนน</h1>
+                    <p class="text-gray-600 text-sm">กรอกรหัสนักเรียนเพื่อดูผลการเรียน</p>
+                </div>
+                
+                <!-- Input Form -->
+                <div class="space-y-4">
+                    <div>
+                        <input type="text" id="studentCode" placeholder="รหัสนักเรียน" 
+                               class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent outline-none transition-all">
+                    </div>
+                    <button onclick="checkScore()" 
+                            class="w-full bg-purple-600 hover:bg-purple-700 text-white py-3 rounded-lg font-semibold transition-colors">
+                        ตรวจสอบคะแนน
+                    </button>
+                </div>
+            </div>
+        </div>
+        
+        <div class="w-full mt-4">
+            <!-- Footer -->
+            <footer class="bg-white border-t border-gray-200 py-4">
+                <div class="container mx-auto px-4 text-center text-sm">
+                    <p>© <script>document.write(new Date().getFullYear());</script> Copyright | พัฒนาโดยครูสิทธิชาติ สิทธิ
+                    <a href="https://www.facebook.com/SanwithzWebapp" target="_blank"><i class="fa-brands fa-facebook  text-blue-500 hover:text-blue-700"></i></a>
+                    <a href="https://www.youtube.com/@Sanwithz" target="_blank"><i class="fa-brands fa-youtube text-red-500 hover:text-red-700"></i></a></p>
+                </div>
+            </footer>
+        </div>
+    </div>
+
+    <!-- Admin Dashboard Page -->
+    <div id="adminPage" class="hidden min-h-screen bg-gray-50 flex flex-col">
+        <!-- Header -->
+        <div class="bg-gradient-to-r from-purple-600 to-blue-600 text-white p-4">
+            <div class="max-w-7xl mx-auto flex justify-between items-center">
+                <h1 class="text-xl font-bold">ระบบจัดการข้อมูลนักเรียน</h1>
+                <button onclick="logout()" class="bg-red-500 hover:bg-red-600 px-4 py-2 rounded-lg font-medium transition-colors">
+                    ออกจากระบบ
+                </button>
+            </div>
+        </div>
+
+        <!-- Content -->
+        <div class="flex-1 max-w-7xl mx-auto p-6 w-full">
+            <!-- Search Bar and Add Button -->
+            <div class="bg-white rounded-lg shadow-sm p-4 mb-6 flex gap-4">
+                <input type="text" id="searchInput" placeholder="ค้นหาด้วยรหัสนักเรียน ชื่อ หรือนามสกุล" 
+                       class="flex-1 px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent outline-none">
+                <button onclick="addNewStudent()" class="bg-green-500 hover:bg-green-600 text-white px-4 py-2 rounded-lg font-medium transition-colors">
+                    เพิ่มนักเรียน
+                </button>
+            </div>
+
+            <!-- Table -->
+            <div class="bg-white rounded-lg shadow-sm overflow-hidden">
+                <table class="w-full">
+                    <thead class="bg-gray-50">
+                        <tr>
+                            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">รหัสนักเรียน</th>
+                            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">ชื่อ-นามสกุล</th>
+                            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">เลขที่</th>
+                            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">คะแนนรวม</th>
+                            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">เกรด</th>
+                            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">การจัดการ</th>
+                        </tr>
+                    </thead>
+                    <tbody class="bg-white divide-y divide-gray-200">
+                        <tr>
+                            <td class="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">65001</td>
+                            <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">สมชาย ใจดี</td>
+                            <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">1</td>
+                            <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">70/100</td>
+                            <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">3.0</td>
+                            <td class="px-6 py-4 whitespace-nowrap text-sm font-medium space-x-2">
+                                <button class="bg-blue-500 hover:bg-blue-600 text-white px-3 py-1 rounded text-xs transition-colors">แก้ไข</button>
+                                <button class="bg-red-500 hover:bg-red-600 text-white px-3 py-1 rounded text-xs transition-colors">ลบ</button>
+                            </td>
+                        </tr>
+                        <tr>
+                            <td class="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">65002</td>
+                            <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">สมหญิง รักเรียน</td>
+                            <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">2</td>
+                            <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">85/100</td>
+                            <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">3.5</td>
+                            <td class="px-6 py-4 whitespace-nowrap text-sm font-medium space-x-2">
+                                <button class="bg-blue-500 hover:bg-blue-600 text-white px-3 py-1 rounded text-xs transition-colors">แก้ไข</button>
+                                <button class="bg-red-500 hover:bg-red-600 text-white px-3 py-1 rounded text-xs transition-colors">ลบ</button>
+                            </td>
+                        </tr>
+                        <tr>
+                            <td class="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">65003</td>
+                            <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">สมศักดิ์ เก่งมาก</td>
+                            <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">3</td>
+                            <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">92/100</td>
+                            <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">4.0</td>
+                            <td class="px-6 py-4 whitespace-nowrap text-sm font-medium space-x-2">
+                                <button class="bg-blue-500 hover:bg-blue-600 text-white px-3 py-1 rounded text-xs transition-colors">แก้ไข</button>
+                                <button class="bg-red-500 hover:bg-red-600 text-white px-3 py-1 rounded text-xs transition-colors">ลบ</button>
+                            </td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+        
+        <div class="w-full mt-4">
+            <!-- Footer -->
+            <footer class="bg-white border-t border-gray-200 py-4">
+                <div class="container mx-auto px-4 text-center text-sm">
+                    <p>© <script>document.write(new Date().getFullYear());</script> Copyright | พัฒนาโดยครูสิทธิชาติ สิทธิ
+                    <a href="https://www.facebook.com/SanwithzWebapp" target="_blank"><i class="fa-brands fa-facebook  text-blue-500 hover:text-blue-700"></i></a>
+                    <a href="https://www.youtube.com/@Sanwithz" target="_blank"><i class="fa-brands fa-youtube text-red-500 hover:text-red-700"></i></a></p>
+                </div>
+            </footer>
+        </div>
+    </div>
+
+    <!-- Student Result Page -->
+    <div id="resultPage" class="hidden min-h-screen flex flex-col">
+        <div class="flex-1 p-4">
+            <div class="max-w-4xl mx-auto">
+                <!-- Logout Button -->
+                <button onclick="logout()" class="mb-6 bg-white bg-opacity-20 text-white px-4 py-2 rounded-lg hover:bg-opacity-30 transition-all">
+                    Logout
+                </button>
+
+                <!-- Student Info Card -->
+                <div class="bg-white rounded-2xl shadow-xl p-6 mb-6">
+                    <h2 class="text-xl font-bold text-gray-800 mb-4">ข้อมูลนักเรียน</h2>
+                    <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+                        <div>
+                            <span class="text-gray-600">รหัส:</span>
+                            <span class="font-semibold ml-2">65001</span>
+                        </div>
+                        <div>
+                            <span class="text-gray-600">ชื่อ:</span>
+                            <span class="font-semibold ml-2">สมชาย ใจดี</span>
+                        </div>
+                        <div>
+                            <span class="text-gray-600">เลขที่:</span>
+                            <span class="font-semibold ml-2">1</span>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Score Cards -->
+                <div class="grid grid-cols-1 md:grid-cols-3 gap-6 mb-6">
+                    <!-- Assignment Card -->
+                    <div class="bg-white rounded-2xl shadow-xl p-6">
+                        <h3 class="font-bold text-gray-800 mb-2">งานที่ได้รับมอบหมาย</h3>
+                        <div class="text-2xl font-bold text-blue-600 mb-2">20/30</div>
+                        <div class="w-full bg-gray-200 rounded-full h-2">
+                            <div class="bg-blue-500 h-2 rounded-full progress-bar" style="width: 67%"></div>
+                        </div>
+                    </div>
+
+                    <!-- Midterm Card -->
+                    <div class="bg-white rounded-2xl shadow-xl p-6">
+                        <h3 class="font-bold text-gray-800 mb-2">สอบกลางภาค</h3>
+                        <div class="text-2xl font-bold text-purple-600 mb-2">20/35</div>
+                        <div class="w-full bg-gray-200 rounded-full h-2">
+                            <div class="bg-purple-500 h-2 rounded-full progress-bar" style="width: 57%"></div>
+                        </div>
+                    </div>
+
+                    <!-- Final Card -->
+                    <div class="bg-white rounded-2xl shadow-xl p-6">
+                        <h3 class="font-bold text-gray-800 mb-2">สอบปลายภาค</h3>
+                        <div class="text-2xl font-bold text-indigo-600 mb-2">30/35</div>
+                        <div class="w-full bg-gray-200 rounded-full h-2">
+                            <div class="bg-indigo-500 h-2 rounded-full progress-bar" style="width: 86%"></div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Overall Score and Grade -->
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                    <!-- Circular Progress -->
+                    <div class="bg-white rounded-2xl shadow-xl p-6 text-center">
+                        <h3 class="font-bold text-gray-800 mb-4">คะแนนรวม</h3>
+                        <div class="relative inline-flex items-center justify-center">
+                            <svg class="w-32 h-32 circular-progress">
+                                <circle cx="64" cy="64" r="56" stroke="#e5e7eb" stroke-width="8" fill="none"></circle>
+                                <circle cx="64" cy="64" r="56" stroke="#8b5cf6" stroke-width="8" fill="none" 
+                                        stroke-dasharray="351.86" stroke-dashoffset="105.56" stroke-linecap="round"></circle>
+                            </svg>
+                            <div class="absolute text-2xl font-bold text-purple-600">70/100</div>
+                        </div>
+                    </div>
+
+                    <!-- Grade Box -->
+                    <div class="bg-white rounded-2xl shadow-xl p-6 text-center">
+                        <h3 class="font-bold text-gray-800 mb-4">เกรดที่ได้รับ</h3>
+                        <div class="text-6xl font-bold text-purple-600 mb-2">3</div>
+                        <div class="text-lg text-gray-600">เกรด 3.0</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <div class="w-full mt-4">
+            <!-- Footer -->
+            <footer class="bg-white border-t border-gray-200 py-4">
+                <div class="container mx-auto px-4 text-center text-sm">
+                    <p>© <script>document.write(new Date().getFullYear());</script> Copyright | พัฒนาโดยครูสิทธิชาติ สิทธิ
+                    <a href="https://www.facebook.com/SanwithzWebapp" target="_blank"><i class="fa-brands fa-facebook  text-blue-500 hover:text-blue-700"></i></a>
+                    <a href="https://www.youtube.com/@Sanwithz" target="_blank"><i class="fa-brands fa-youtube text-red-500 hover:text-red-700"></i></a></p>
+                </div>
+            </footer>
+        </div>
+    </div>
+
+    <!-- Edit Student Modal -->
+    <div id="editModal" class="hidden fixed inset-0 bg-gray-600 bg-opacity-50 overflow-y-auto h-full w-full z-50">
+        <div class="relative top-20 mx-auto p-5 border w-96 shadow-lg rounded-md bg-white">
+            <div class="mt-3">
+                <h3 class="text-lg font-bold text-gray-900 mb-4">แก้ไขข้อมูลนักเรียน</h3>
+                <form id="editForm" class="space-y-4">
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-1">รหัสนักเรียน</label>
+                        <input type="text" id="editStudentCode" class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-transparent">
+                    </div>
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-1">ชื่อ-นามสกุล</label>
+                        <input type="text" id="editName" class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-transparent">
+                    </div>
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-1">เลขที่</label>
+                        <input type="text" id="editNumber" class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-transparent">
+                    </div>
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-1">คะแนนงาน (0-30)</label>
+                        <input type="number" id="editAssignment" min="0" max="30" class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-transparent">
+                    </div>
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-1">คะแนนกลางภาค (0-35)</label>
+                        <input type="number" id="editMidterm" min="0" max="35" class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-transparent">
+                    </div>
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-1">คะแนนปลายภาค (0-35)</label>
+                        <input type="number" id="editFinal" min="0" max="35" class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-transparent">
+                    </div>
+                    <div class="flex justify-end space-x-3 pt-4">
+                        <button type="button" onclick="closeEditModal()" class="px-4 py-2 bg-gray-300 text-gray-700 rounded-md hover:bg-gray-400 transition-colors">
+                            ยกเลิก
+                        </button>
+                        <button type="submit" class="px-4 py-2 bg-purple-600 text-white rounded-md hover:bg-purple-700 transition-colors">
+                            บันทึก
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+
+    <script>
+
+
+        // Google Apps Script URL - Connected to your database
+        const SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbym2NL4NLUEZ7yFQvS-Use-FLHfrxMeAt3CYpA3Ii2pfTnKf-e5LkRQCUz9_mODPDpf_A/exec';
+        
+        // Check session on page load
+        window.addEventListener('load', function() {
+            const isLoggedIn = sessionStorage.getItem('isLoggedIn');
+            const currentPage = sessionStorage.getItem('currentPage');
+            const studentData = sessionStorage.getItem('studentData');
+            
+            if (isLoggedIn === 'true') {
+                if (currentPage === 'admin') {
+                    showAdminPage();
+                } else if (currentPage === 'result' && studentData) {
+                    const student = JSON.parse(studentData);
+                    const studentCode = sessionStorage.getItem('studentCode');
+                    showResultPage(studentCode, student);
+                }
+            }
+        });
+        
+        function checkScore() {
+            const studentCode = document.getElementById('studentCode').value.trim();
+            
+            if (!studentCode) {
+                Swal.fire({
+                    icon: 'warning',
+                    title: 'กรุณากรอกรหัสนักเรียน',
+                    confirmButtonText: 'ตกลง'
+                });
+                return;
+            }
+
+            if (studentCode === 'admin') {
+                showAdminPage();
+                return;
+            }
+
+            // Show loading
+            $('body').LoadingOverlay('show');
+            
+            // Fetch student data from Google Sheets
+            fetchStudentData(studentCode, function(student) {
+                $('body').LoadingOverlay('hide');
+                if (student) {
+                    showResultPage(studentCode, student);
+                } else {
+                    Swal.fire({
+                        icon: 'error',
+                        title: 'ไม่พบข้อมูลนักเรียน',
+                        text: 'กรุณาตรวจสอบรหัสนักเรียนอีกครั้ง',
+                        confirmButtonText: 'ตกลง'
+                    });
+                }
+            });
+        }
+
+        // JSONP Functions for Google Apps Script
+        function fetchStudentData(studentCode, callback) {
+            const callbackName = 'jsonp_callback_' + Math.round(100000 * Math.random());
+            
+            // Create global callback function
+            window[callbackName] = function(response) {
+                if (response.success) {
+                    callback(response.data);
+                } else {
+                    callback(null);
+                }
+                // Clean up
+                document.head.removeChild(script);
+                delete window[callbackName];
+            };
+            
+            // Create script tag for JSONP
+            const script = document.createElement('script');
+            script.src = `${SCRIPT_URL}?action=getStudent&studentCode=${encodeURIComponent(studentCode)}&callback=${callbackName}`;
+            document.head.appendChild(script);
+            
+            // Timeout handling
+            setTimeout(() => {
+                if (window[callbackName]) {
+                    callback(null);
+                    document.head.removeChild(script);
+                    delete window[callbackName];
+                }
+            }, 10000);
+        }
+
+        function fetchAllStudents(callback) {
+            const callbackName = 'jsonp_callback_' + Math.round(100000 * Math.random());
+            
+            window[callbackName] = function(response) {
+                if (response.success) {
+                    callback(response.data || []);
+                } else {
+                    callback([]);
+                }
+                document.head.removeChild(script);
+                delete window[callbackName];
+            };
+            
+            const script = document.createElement('script');
+            script.src = `${SCRIPT_URL}?action=getAllStudents&callback=${callbackName}`;
+            document.head.appendChild(script);
+            
+            setTimeout(() => {
+                if (window[callbackName]) {
+                    callback([]);
+                    document.head.removeChild(script);
+                    delete window[callbackName];
+                }
+            }, 10000);
+        }
+
+        function saveStudent(studentData, callback) {
+            const callbackName = 'jsonp_callback_' + Math.round(100000 * Math.random());
+            
+            window[callbackName] = function(response) {
+                callback(response.success || false);
+                document.head.removeChild(script);
+                delete window[callbackName];
+            };
+            
+            const script = document.createElement('script');
+            script.src = `${SCRIPT_URL}?action=saveStudent&data=${encodeURIComponent(JSON.stringify(studentData))}&callback=${callbackName}`;
+            document.head.appendChild(script);
+            
+            setTimeout(() => {
+                if (window[callbackName]) {
+                    callback(false);
+                    document.head.removeChild(script);
+                    delete window[callbackName];
+                }
+            }, 10000);
+        }
+
+        function deleteStudent(studentCode, callback) {
+            const callbackName = 'jsonp_callback_' + Math.round(100000 * Math.random());
+            
+            window[callbackName] = function(response) {
+                callback(response.success || false);
+                document.head.removeChild(script);
+                delete window[callbackName];
+            };
+            
+            const script = document.createElement('script');
+            script.src = `${SCRIPT_URL}?action=deleteStudent&studentCode=${encodeURIComponent(studentCode)}&callback=${callbackName}`;
+            document.head.appendChild(script);
+            
+            setTimeout(() => {
+                if (window[callbackName]) {
+                    callback(false);
+                    document.head.removeChild(script);
+                    delete window[callbackName];
+                }
+            }, 10000);
+        }
+
+        function showAdminPage() {
+            document.getElementById('loginPage').classList.add('hidden');
+            document.getElementById('adminPage').classList.remove('hidden');
+            document.getElementById('resultPage').classList.add('hidden');
+            
+            // Save session
+            sessionStorage.setItem('isLoggedIn', 'true');
+            sessionStorage.setItem('currentPage', 'admin');
+            
+            // Load all students
+            loadStudentsTable();
+        }
+
+        function loadStudentsTable() {
+            $('body').LoadingOverlay('show');
+            fetchAllStudents(function(students) {
+                $('body').LoadingOverlay('hide');
+                const tbody = document.querySelector('#adminPage tbody');
+                tbody.innerHTML = '';
+                
+                students.forEach(student => {
+                    const row = document.createElement('tr');
+                    row.innerHTML = `
+                        <td class="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">${student.studentCode}</td>
+                        <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">${student.name}</td>
+                        <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">${student.number}</td>
+                        <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">${student.total}/100</td>
+                        <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">${student.grade}</td>
+                        <td class="px-6 py-4 whitespace-nowrap text-sm font-medium space-x-2">
+                            <button onclick="editStudent('${student.studentCode}')" class="bg-blue-500 hover:bg-blue-600 text-white px-3 py-1 rounded text-xs transition-colors">แก้ไข</button>
+                            <button onclick="confirmDeleteStudent('${student.studentCode}')" class="bg-red-500 hover:bg-red-600 text-white px-3 py-1 rounded text-xs transition-colors">ลบ</button>
+                        </td>
+                    `;
+                    tbody.appendChild(row);
+                });
+            });
+        }
+
+        function editStudent(studentCode) {
+            fetchStudentData(studentCode, function(student) {
+                if (student) {
+                    // Populate form fields
+                    document.getElementById('editStudentCode').value = student.studentCode;
+                    document.getElementById('editName').value = student.name;
+                    document.getElementById('editNumber').value = student.number;
+                    document.getElementById('editAssignment').value = student.assignment;
+                    document.getElementById('editMidterm').value = student.midterm;
+                    document.getElementById('editFinal').value = student.final;
+                    
+                    // Show modal
+                    document.getElementById('editModal').classList.remove('hidden');
+                }
+            });
+        }
+
+        function closeEditModal() {
+            document.getElementById('editModal').classList.add('hidden');
+        }
+
+        // Handle edit form submission
+        document.getElementById('editForm').addEventListener('submit', function(e) {
+            e.preventDefault();
+            
+            const updatedStudent = {
+                studentCode: document.getElementById('editStudentCode').value,
+                name: document.getElementById('editName').value,
+                number: document.getElementById('editNumber').value,
+                assignment: parseInt(document.getElementById('editAssignment').value),
+                midterm: parseInt(document.getElementById('editMidterm').value),
+                final: parseInt(document.getElementById('editFinal').value)
+            };
+            
+            updatedStudent.total = updatedStudent.assignment + updatedStudent.midterm + updatedStudent.final;
+            updatedStudent.grade = calculateGrade(updatedStudent.total);
+            
+            $('body').LoadingOverlay('show');
+            saveStudent(updatedStudent, function(success) {
+                $('body').LoadingOverlay('hide');
+                if (success) {
+                    Swal.fire('สำเร็จ!', 'บันทึกข้อมูลเรียบร้อย', 'success');
+                    loadStudentsTable();
+                    closeEditModal();
+                } else {
+                    Swal.fire('ผิดพลาด!', 'ไม่สามารถบันทึกข้อมูลได้', 'error');
+                }
+            });
+        });
+
+        function confirmDeleteStudent(studentCode) {
+            Swal.fire({
+                title: 'ยืนยันการลบ',
+                text: `คุณต้องการลบข้อมูลนักเรียนรหัส ${studentCode} หรือไม่?`,
+                icon: 'warning',
+                showCancelButton: true,
+                confirmButtonColor: '#d33',
+                cancelButtonColor: '#3085d6',
+                confirmButtonText: 'ลบ',
+                cancelButtonText: 'ยกเลิก'
+            }).then((result) => {
+                if (result.isConfirmed) {
+                    $('body').LoadingOverlay('show');
+                    deleteStudent(studentCode, function(success) {
+                        $('body').LoadingOverlay('hide');
+                        if (success) {
+                            Swal.fire('ลบแล้ว!', 'ลบข้อมูลนักเรียนเรียบร้อย', 'success');
+                            loadStudentsTable();
+                        } else {
+                            Swal.fire('ผิดพลาด!', 'ไม่สามารถลบข้อมูลได้', 'error');
+                        }
+                    });
+                }
+            });
+        }
+
+        function addNewStudent() {
+            Swal.fire({
+                title: 'เพิ่มนักเรียนใหม่',
+                html: `
+                    <div class="space-y-4">
+                        <input id="newStudentCode" class="swal2-input" placeholder="รหัสนักเรียน">
+                        <input id="newName" class="swal2-input" placeholder="ชื่อ-นามสกุล">
+                        <input id="newNumber" class="swal2-input" placeholder="เลขที่">
+                        <input id="newAssignment" class="swal2-input" placeholder="คะแนนงาน (0-30)" value="0">
+                        <input id="newMidterm" class="swal2-input" placeholder="คะแนนกลางภาค (0-35)" value="0">
+                        <input id="newFinal" class="swal2-input" placeholder="คะแนนปลายภาค (0-35)" value="0">
+                    </div>
+                `,
+                showCancelButton: true,
+                confirmButtonText: 'เพิ่ม',
+                cancelButtonText: 'ยกเลิก',
+                preConfirm: () => {
+                    const newStudent = {
+                        studentCode: document.getElementById('newStudentCode').value,
+                        name: document.getElementById('newName').value,
+                        number: document.getElementById('newNumber').value,
+                        assignment: parseInt(document.getElementById('newAssignment').value) || 0,
+                        midterm: parseInt(document.getElementById('newMidterm').value) || 0,
+                        final: parseInt(document.getElementById('newFinal').value) || 0
+                    };
+                    
+                    if (!newStudent.studentCode || !newStudent.name || !newStudent.number) {
+                        Swal.showValidationMessage('กรุณากรอกข้อมูลให้ครบถ้วน');
+                        return false;
+                    }
+                    
+                    newStudent.total = newStudent.assignment + newStudent.midterm + newStudent.final;
+                    newStudent.grade = calculateGrade(newStudent.total);
+                    
+                    return newStudent;
+                }
+            }).then((result) => {
+                if (result.isConfirmed) {
+                    $('body').LoadingOverlay('show');
+                    saveStudent(result.value, function(success) {
+                        $('body').LoadingOverlay('hide');
+                        if (success) {
+                            Swal.fire('สำเร็จ!', 'เพิ่มนักเรียนเรียบร้อย', 'success');
+                            loadStudentsTable();
+                        } else {
+                            Swal.fire('ผิดพลาด!', 'ไม่สามารถเพิ่มนักเรียนได้', 'error');
+                        }
+                    });
+                }
+            });
+        }
+
+        function calculateGrade(total) {
+            if (total >= 80) return '4.0';
+            if (total >= 75) return '3.5';
+            if (total >= 70) return '3.0';
+            if (total >= 65) return '2.5';
+            if (total >= 60) return '2.0';
+            if (total >= 55) return '1.5';
+            if (total >= 50) return '1.0';
+            return '0.0';
+        }
+
+        function showResultPage(studentCode, student) {
+            // Save session
+            sessionStorage.setItem('isLoggedIn', 'true');
+            sessionStorage.setItem('currentPage', 'result');
+            sessionStorage.setItem('studentCode', studentCode);
+            sessionStorage.setItem('studentData', JSON.stringify(student));
+            
+            // Update student info
+            const resultPage = document.getElementById('resultPage');
+            const studentInfo = resultPage.querySelector('.grid.grid-cols-1.md\\:grid-cols-3.gap-4');
+            studentInfo.innerHTML = `
+                <div>
+                    <span class="text-gray-600">รหัส:</span>
+                    <span class="font-semibold ml-2">${studentCode}</span>
+                </div>
+                <div>
+                    <span class="text-gray-600">ชื่อ:</span>
+                    <span class="font-semibold ml-2">${student.name}</span>
+                </div>
+                <div>
+                    <span class="text-gray-600">เลขที่:</span>
+                    <span class="font-semibold ml-2">${student.number}</span>
+                </div>
+            `;
+
+            // Update scores
+            const scoreCards = resultPage.querySelectorAll('.bg-white.rounded-2xl.shadow-xl.p-6');
+            scoreCards[1].querySelector('.text-2xl.font-bold.text-blue-600').textContent = `${student.assignment}/30`;
+            scoreCards[1].querySelector('.progress-bar').style.width = `${(student.assignment/30)*100}%`;
+            
+            scoreCards[2].querySelector('.text-2xl.font-bold.text-purple-600').textContent = `${student.midterm}/35`;
+            scoreCards[2].querySelector('.progress-bar').style.width = `${(student.midterm/35)*100}%`;
+            
+            scoreCards[3].querySelector('.text-2xl.font-bold.text-indigo-600').textContent = `${student.final}/35`;
+            scoreCards[3].querySelector('.progress-bar').style.width = `${(student.final/35)*100}%`;
+
+            // Update total score and grade
+            const totalScoreElement = resultPage.querySelector('.absolute.text-2xl.font-bold.text-purple-600');
+            totalScoreElement.textContent = `${student.total}/100`;
+            
+            const gradeElement = resultPage.querySelector('.text-6xl.font-bold.text-purple-600');
+            gradeElement.textContent = student.grade.split('.')[0];
+            
+            const gradeTextElement = resultPage.querySelector('.text-lg.text-gray-600');
+            gradeTextElement.textContent = `เกรด ${student.grade}`;
+
+            // Update circular progress
+            const circle = resultPage.querySelector('circle[stroke="#8b5cf6"]');
+            const circumference = 2 * Math.PI * 56;
+            const offset = circumference - (student.total / 100) * circumference;
+            circle.style.strokeDashoffset = offset;
+
+            document.getElementById('loginPage').classList.add('hidden');
+            document.getElementById('adminPage').classList.add('hidden');
+            document.getElementById('resultPage').classList.remove('hidden');
+        }
+
+        function goBack() {
+            document.getElementById('loginPage').classList.remove('hidden');
+            document.getElementById('adminPage').classList.add('hidden');
+            document.getElementById('resultPage').classList.add('hidden');
+            document.getElementById('studentCode').value = '';
+        }
+
+        function logout() {
+            // Clear session storage
+            sessionStorage.removeItem('isLoggedIn');
+            sessionStorage.removeItem('currentPage');
+            sessionStorage.removeItem('studentCode');
+            sessionStorage.removeItem('studentData');
+            
+            // Go back to login page
+            goBack();
+        }
+
+        // Allow Enter key to submit
+        document.getElementById('studentCode').addEventListener('keypress', function(e) {
+            if (e.key === 'Enter') {
+                checkScore();
+            }
+        });
+    </script>
+</body>
+</html>
